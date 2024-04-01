@@ -12,7 +12,7 @@ func main() {
     if err != nil {
         log.Println("** proxy server not found:", err)
     }
-    proxyServer = fmt.Sprintf("%s:%d", host, port)
+    proxyServer := fmt.Sprintf("%s:%d", host, port)
     log.Println("** 프록시 서버를 찾았습니다:", proxyServer)
 }
 ```
