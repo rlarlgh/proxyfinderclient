@@ -22,7 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProxyFinderClient interface {
-	FindProxyServer(ctx context.Context, in *FindProxyServerRequest, opts ...grpc.CallOption) (*FindProxyServerResponse, error)
+	FindProxyServer(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*FindProxyServerResponse, error)
+	FindProxyServerStrict(ctx context.Context, in *FindProxyServerRequest, opts ...grpc.CallOption) (*FindProxyServerResponse, error)
 }
 
 type proxyFinderClient struct {
@@ -33,9 +34,18 @@ func NewProxyFinderClient(cc grpc.ClientConnInterface) ProxyFinderClient {
 	return &proxyFinderClient{cc}
 }
 
-func (c *proxyFinderClient) FindProxyServer(ctx context.Context, in *FindProxyServerRequest, opts ...grpc.CallOption) (*FindProxyServerResponse, error) {
+func (c *proxyFinderClient) FindProxyServer(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*FindProxyServerResponse, error) {
 	out := new(FindProxyServerResponse)
 	err := c.cc.Invoke(ctx, "/grpc.proxyfinder.ProxyFinder/FindProxyServer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *proxyFinderClient) FindProxyServerStrict(ctx context.Context, in *FindProxyServerRequest, opts ...grpc.CallOption) (*FindProxyServerResponse, error) {
+	out := new(FindProxyServerResponse)
+	err := c.cc.Invoke(ctx, "/grpc.proxyfinder.ProxyFinder/FindProxyServerStrict", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +56,8 @@ func (c *proxyFinderClient) FindProxyServer(ctx context.Context, in *FindProxySe
 // All implementations must embed UnimplementedProxyFinderServer
 // for forward compatibility
 type ProxyFinderServer interface {
-	FindProxyServer(context.Context, *FindProxyServerRequest) (*FindProxyServerResponse, error)
+	FindProxyServer(context.Context, *Empty) (*FindProxyServerResponse, error)
+	FindProxyServerStrict(context.Context, *FindProxyServerRequest) (*FindProxyServerResponse, error)
 	mustEmbedUnimplementedProxyFinderServer()
 }
 
@@ -54,8 +65,11 @@ type ProxyFinderServer interface {
 type UnimplementedProxyFinderServer struct {
 }
 
-func (UnimplementedProxyFinderServer) FindProxyServer(context.Context, *FindProxyServerRequest) (*FindProxyServerResponse, error) {
+func (UnimplementedProxyFinderServer) FindProxyServer(context.Context, *Empty) (*FindProxyServerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindProxyServer not implemented")
+}
+func (UnimplementedProxyFinderServer) FindProxyServerStrict(context.Context, *FindProxyServerRequest) (*FindProxyServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FindProxyServerStrict not implemented")
 }
 func (UnimplementedProxyFinderServer) mustEmbedUnimplementedProxyFinderServer() {}
 
@@ -71,7 +85,7 @@ func RegisterProxyFinderServer(s grpc.ServiceRegistrar, srv ProxyFinderServer) {
 }
 
 func _ProxyFinder_FindProxyServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindProxyServerRequest)
+	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,7 +97,25 @@ func _ProxyFinder_FindProxyServer_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/grpc.proxyfinder.ProxyFinder/FindProxyServer",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProxyFinderServer).FindProxyServer(ctx, req.(*FindProxyServerRequest))
+		return srv.(ProxyFinderServer).FindProxyServer(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProxyFinder_FindProxyServerStrict_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindProxyServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProxyFinderServer).FindProxyServerStrict(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.proxyfinder.ProxyFinder/FindProxyServerStrict",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProxyFinderServer).FindProxyServerStrict(ctx, req.(*FindProxyServerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -98,6 +130,10 @@ var ProxyFinder_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FindProxyServer",
 			Handler:    _ProxyFinder_FindProxyServer_Handler,
+		},
+		{
+			MethodName: "FindProxyServerStrict",
+			Handler:    _ProxyFinder_FindProxyServerStrict_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

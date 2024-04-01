@@ -27,7 +27,7 @@ func NewProxyFinderClient(host string, port int) *ProxyFinderClient {
 	}
 }
 
-func (c *ProxyFinderClient) FindProxyServer(targetUrl string) (string, int, error) {
+func (c *ProxyFinderClient) FindProxyServer() (string, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -37,7 +37,25 @@ func (c *ProxyFinderClient) FindProxyServer(targetUrl string) (string, int, erro
 	}
 	defer conn.Close()
 	client := pb.NewProxyFinderClient(conn)
-	resp, err := client.FindProxyServer(ctx, &pb.FindProxyServerRequest{TargetUrl: targetUrl})
+	resp, err := client.FindProxyServer(ctx, &pb.Empty{})
+	if err != nil {
+		return "", 0, err
+	}
+	// fmt.Printf("Found proxy server: %s:%d\n", resp.Host, resp.Port)
+	return resp.Host, int(resp.Port), nil
+}
+
+func (c *ProxyFinderClient) FindProxyServerStrict(targetUrl string) (string, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	conn, err := c.tryConnect(c.Host, c.Port)
+	if err != nil {
+		return "", 0, err
+	}
+	defer conn.Close()
+	client := pb.NewProxyFinderClient(conn)
+	resp, err := client.FindProxyServerStrict(ctx, &pb.FindProxyServerRequest{TargetUrl: targetUrl})
 	if err != nil {
 		return "", 0, err
 	}
