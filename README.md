@@ -8,7 +8,8 @@ import (
 
 func main() {
     client := proxyfinderclient.NewProxyFinderClient("localhost", 50053)
-    host, port, err := client.FindProxyServer("https://www.google.com")
+    // host, port, err := client.FindProxyServerStrict("https://google.co.kr")
+	host, port, err := client.FindProxyServer()
     if err != nil {
         log.Println("** proxy server not found:", err)
     }
